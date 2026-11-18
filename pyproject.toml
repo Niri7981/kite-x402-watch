@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kite-x402-watch"
+version = "0.1.0"
+description = "Detect changes in advertised Kite x402 payment terms"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.scripts]
+kite-watch = "kite_watch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["kite_watch*"]

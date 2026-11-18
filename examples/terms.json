@@ -1,0 +1,12 @@
+{
+  "scheme": "exact",
+  "network": "eip155:2366",
+  "asset": "0x7aB6f3ed87C42eF0aDb67Ed95090f8bF5240149e",
+  "amount": "1000",
+  "payTo": "0x1111111111111111111111111111111111111111",
+  "maxTimeoutSeconds": 60,
+  "extra": {
+    "name": "Bridged USDC (Kite AI)",
+    "version": "2"
+  }
+}
