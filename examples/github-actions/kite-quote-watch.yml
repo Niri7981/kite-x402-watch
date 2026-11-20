@@ -1,0 +1,40 @@
+name: Watch Kite x402 payment terms
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-quote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install kite-watch from a reviewed commit
+        shell: bash
+        env:
+          KITE_WATCH_REV: ${{ vars.KITE_WATCH_REV }}
+        run: |
+          if [[ ! "$KITE_WATCH_REV" =~ ^[0-9a-f]{40}$ ]]; then
+            echo '::error::Set KITE_WATCH_REV to a reviewed commit SHA from the kite-x402-watch repository.'
+            exit 2
+          fi
+          python -m pip install "kite-x402-watch @ git+https://github.com/Niri7981/kite-x402-watch.git@${KITE_WATCH_REV}"
+      - name: Compare with the approved quote
+        shell: bash
+        run: |
+          status=0
+          kite-watch check --baseline watch/approved.json --json || status=$?
+          case "$status" in
+            0) echo 'Payment terms match the approved quote.' ;;
+            1) echo '::error::Payment terms changed. Review the field changes in the check output.' ;;
+            2) echo '::error::Could not compare payment terms. Review the error in the check output.' ;;
+            *) echo '::error::kite-watch did not complete.' ;;
+          esac
+          exit "$status"

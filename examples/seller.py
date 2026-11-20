@@ -9,8 +9,11 @@ from pathlib import Path
 def handler(path):
     class Seller(BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path != "/quote":
+                self.send_error(404)
+                return
             try:
-                option = json.loads(path.read_text())
+                option = json.loads(path.read_text(encoding="utf8"))
             except (OSError, ValueError):
                 self.send_error(503)
                 return
