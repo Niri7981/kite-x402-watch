@@ -63,6 +63,37 @@ class Watch(unittest.TestCase):
             baseline.write_text(json.dumps({**json.loads(original), "version": True}))
             self.assertEqual(cli("inspect"), (2, {"status": "error", "error": "unsupported baseline format"}))
 
+    def test_diff_compares_saved_candidates_without_network(self):
+        url = "https://seller.invalid/quote"
+        terms = json.loads((ROOT / "examples/terms.json").read_text())
+        saved = {"version": 1, "url": url, "terms": terms}
+        with tempfile.TemporaryDirectory() as tmp:
+            approved = Path(tmp) / "approved.json"
+            candidate = Path(tmp) / "candidate.json"
+            approved.write_text(json.dumps(saved))
+            approved_bytes = approved.read_bytes()
+
+            def diff(data):
+                candidate.write_text(json.dumps(data))
+                candidate_bytes = candidate.read_bytes()
+                result = subprocess.run(
+                    [sys.executable, "-m", "kite_watch.cli", "diff", str(candidate),
+                     "--baseline", str(approved), "--json"],
+                    capture_output=True, text=True, cwd=ROOT, timeout=5,
+                )
+                self.assertEqual(candidate.read_bytes(), candidate_bytes)
+                self.assertEqual(approved.read_bytes(), approved_bytes)
+                return result.returncode, json.loads(result.stdout)
+
+            self.assertEqual(diff(saved), (0, {"status": "unchanged", "url": url, "changes": {}}))
+            updated = {**saved, "terms": {**terms, "amount": "2000"}}
+            self.assertEqual(diff(updated), (1, {"status": "changed", "url": url, "changes": {
+                "amount": {"before": "1000", "after": "2000"},
+            }}))
+            self.assertEqual(diff({**saved, "url": "https://seller.invalid/other"}), (2, {
+                "status": "error", "error": "baseline and candidate must use the same URL",
+            }))
+
     def test_reports_timeout_for_seller_that_never_sends_headers(self):
         request_received = threading.Event()
         finish_request = threading.Event()
