@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `kite-watch diff` to compare approved and candidate snapshots offline before accepting new terms.
+- Show the before and after price when a check detects a different token or network, even if the raw amount is unchanged.
 - Added `kite-watch inspect` to read saved terms and display their price offline.
 - Made network timeouts configurable and distinguished timeouts from other endpoint failures.
 - Added a GitHub Actions example that reports changed terms separately from comparison errors.

@@ -4,15 +4,24 @@
 kite-watch snapshot URL [--baseline FILE] [--timeout SECONDS] [--json]
 kite-watch check [--baseline FILE] [--timeout SECONDS] [--json]
 kite-watch inspect [--baseline FILE] [--json]
+kite-watch diff CANDIDATE [--baseline FILE] [--json]
 ```
 
 默认基准路径为 `kite-baseline.json`。超时默认 5 秒，可设为大于 0、至多 60 的秒数。它传给网络连接的阻塞操作；CI 可额外设置整个作业的时限。使用可信的 HTTPS GET 地址，避免把凭证放进 URL 或提交到基准中。`check` 不修改基准，也不跟随重定向。
 
 `inspect` 离线显示基准中保存的 URL、网络、代币、金额和收款地址，并把已知 Kite 代币的原子金额换算为可读价格。它不会请求卖家或改写文件；要看当前报价是否变化，请用 `check`。
 
+要审核新报价，可以先把它保存为 `watch/candidate.json`，再离线比较：
+
+```sh
+kite-watch diff watch/candidate.json --baseline watch/approved.json
+```
+
+两份基准必须保存相同的 URL。命令不访问网络、不修改文件，和 `check` 共用字段差异及退出码。确认变化后，再手动替换已批准的基准。
+
 | 退出码 | 含义 | `--json` 中的 `status` |
 | --- | --- | --- |
-| `0` | 已保存或查看基准，或当前报价与基准一致 | `saved` / `inspected` / `unchanged` |
+| `0` | 已保存或查看基准，或比较结果一致 | `saved` / `inspected` / `unchanged` |
 | `1` | 至少一项支付条件变化 | `changed` |
 | `2` | 无法比较，例如超时、503、响应不支持、基准无效 | `error` |
 

@@ -61,6 +61,15 @@ def load_baseline(path):
     return url, normalize(data.get("terms"))
 
 
+def compare(url, old, new):
+    changes = {key: {"before": old[key], "after": new[key]} for key in FIELDS if new[key] != old[key]}
+    lines = [f"{key}: {values['before']} -> {values['after']}" for key, values in changes.items()]
+    if changes.keys() & {"amount", "asset", "network"}:
+        lines.append(f"price: {price(old)} -> {price(new)}")
+    status = "changed" if changes else "unchanged"
+    return int(bool(changes)), {"status": status, "url": url, "changes": changes}, "\n".join([status, *lines])
+
+
 def run(args):
     path = args.baseline
     if args.command == "snapshot":
@@ -78,13 +87,12 @@ def run(args):
         lines = ["Saved payment terms", f"url: {url}", *(f"{key}: {old[key]}" for key in FIELDS),
                  f"price: {display_price}"]
         return 0, {"status": "inspected", "url": url, "terms": old, "price": display_price}, "\n".join(lines)
-    new = observe(url, args.timeout)
-    changes = {k: {"before": old[k], "after": new[k]} for k in FIELDS if new[k] != old[k]}
-    lines = [f"{k}: {v['before']} -> {v['after']}" for k, v in changes.items()]
-    if "amount" in changes:
-        lines.append(f"price: {price(old)} -> {price(new)}")
-    status = "changed" if changes else "unchanged"
-    return int(bool(changes)), {"status": status, "url": url, "changes": changes}, "\n".join([status, *lines])
+    if args.command == "diff":
+        candidate_url, new = load_baseline(args.candidate)
+        if candidate_url != url:
+            raise ValueError("baseline and candidate must use the same URL")
+        return compare(url, old, new)
+    return compare(url, old, observe(url, args.timeout))
 
 
 def main(argv=None):
@@ -94,7 +102,9 @@ def main(argv=None):
     snapshot.add_argument("url")
     check = subs.add_parser("check", help="compare with a saved baseline")
     inspect = subs.add_parser("inspect", help="show saved payment terms without contacting the endpoint")
-    for sub in (snapshot, check, inspect):
+    diff = subs.add_parser("diff", help="compare two saved baselines without contacting the endpoint")
+    diff.add_argument("candidate", type=Path)
+    for sub in (snapshot, check, inspect, diff):
         sub.add_argument("--baseline", type=Path, default=Path("kite-baseline.json"))
         sub.add_argument("--json", action="store_true")
     for sub in (snapshot, check):
