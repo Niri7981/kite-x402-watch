@@ -42,6 +42,12 @@ class Watch(unittest.TestCase):
                             self.assertEqual(code, 1)
                             self.assertEqual(list(report["changes"]), [field])
                             self.assertEqual(report["changes"][field]["after"], value)
+                    result = subprocess.run(
+                        [sys.executable, "-m", "kite_watch.cli", "check", "--baseline", str(baseline)],
+                        capture_output=True, text=True, cwd=ROOT, timeout=5,
+                    )
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("price: 0.001 USDC.e -> 1000 atomic units", result.stdout)
                     terms_file.unlink()
                     self.assertEqual(cli("check"), (2, {"status": "error", "error": "expected HTTP 402, got HTTP 503"}))
                     self.assertEqual(baseline.read_bytes(), original)

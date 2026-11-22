@@ -81,7 +81,7 @@ def run(args):
     new = observe(url, args.timeout)
     changes = {k: {"before": old[k], "after": new[k]} for k in FIELDS if new[k] != old[k]}
     lines = [f"{k}: {v['before']} -> {v['after']}" for k, v in changes.items()]
-    if "amount" in changes:
+    if changes.keys() & {"amount", "asset", "network"}:
         lines.append(f"price: {price(old)} -> {price(new)}")
     status = "changed" if changes else "unchanged"
     return int(bool(changes)), {"status": status, "url": url, "changes": changes}, "\n".join([status, *lines])
